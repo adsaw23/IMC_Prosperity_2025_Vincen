@@ -88,7 +88,7 @@ class Trader:
         two_third_limit = (2/3) * limit  
        
 
-        fair_value= 2035
+        
         if len(order_depth.sell_orders) != 0 and len(order_depth.buy_orders) != 0: 
 
             best_ask = min(order_depth.sell_orders.keys())
@@ -100,7 +100,7 @@ class Trader:
             if len(self.kelp_prices) > timespan:
                 self.kelp_prices.pop(0)
         
-            fair_value = np.mean(self.kelp_prices)
+        fair_value = (max(self.kelp_prices)+min(self.kelp_prices))/2 if self.kelp_prices else 2031
         
           #Calulate Best ask above fair and Best bid below fair (Market making)
         
