@@ -530,9 +530,6 @@ class Trader:
         djembe_orders: List[Order] = []
         if Product.JAMS not in order_depths.keys() or Product.DJEMBES not in order_depths.keys():
             return jam_orders, djembe_orders
-        
-        PARAMS[Product.JAMS]["buy_order_volume"] =0
-        PARAMS[Product.JAMS]["sell_order_volume"] =0
 
         jams_order_depth = order_depths[Product.JAMS]
         jams_swmid = self.get_swmid(jams_order_depth)
@@ -562,17 +559,16 @@ class Trader:
         djembe_limit= PARAMS[Product.DJEMBES]['limit']
         
         if zscore >= self.params[spread_product]["zscore_threshold"]:
-            best_bid = max(jams_order_depth.buy_orders.keys())
-            best_ask = min(djembe_order_depth.sell_orders.keys())
-            best_bid_volume = abs(jams_order_depth.buy_orders[best_bid])
-            best_ask_volume = abs(djembe_order_depth.sell_orders[best_ask])
+            best_bid = max(djembe_order_depth.buy_orders.keys())
+            best_ask = min(jams_order_depth.sell_orders.keys())
+            best_bid_volume = abs(djembe_order_depth.buy_orders[best_bid])
+            best_ask_volume = abs(jams_order_depth.sell_orders[best_ask])
 
-            jams_quantity = min(best_bid_volume, jam_limit - jam_position)
-            PARAMS[Product.JAMS]["buy_order_volume"] += jams_quantity
-            jam_orders.append(Order(Product.JAMS, best_bid, jams_quantity))
+            jams_quantity = min(best_ask_volume, jam_limit - jam_position)
+            jam_orders.append(Order(Product.JAMS, best_ask, jams_quantity))
 
-            djembe_quantity = min(best_ask_volume, djembe_limit + djembe_position)
-            djembe_orders.append(Order(Product.DJEMBES, best_ask, -djembe_quantity))
+            djembe_quantity = min(best_bid_volume, djembe_limit + djembe_position)
+            djembe_orders.append(Order(Product.DJEMBES, best_bid, -djembe_quantity))
            
         elif zscore <= -self.params[spread_product]["zscore_threshold"]:
             best_bid = max(jams_order_depth.buy_orders.keys())
@@ -581,7 +577,6 @@ class Trader:
             best_ask_volume = abs(djembe_order_depth.sell_orders[best_ask])
 
             jams_quantity = min(best_bid_volume, jam_limit + jam_position)
-            PARAMS[Product.JAMS]["sell_order_volume"] += jams_quantity
             jam_orders.append(Order(Product.JAMS, best_bid, -jams_quantity))
 
             djembe_quantity = min(best_ask_volume, djembe_limit - djembe_position)
@@ -661,9 +656,8 @@ class Trader:
                 squid_limit - squid_position  # Can buy up to (limit - position)
             )
 
-            if jam_qty > 0 and squid_qty > 0:
-                jam_orders.append(Order(Product.JAMS, best_bid_jam, -jam_qty))
-                squid_orders.append(Order(Product.SQUID_INK, best_ask_squid, squid_qty))
+            jam_orders.append(Order(Product.JAMS, best_bid_jam, -jam_qty))
+            squid_orders.append(Order(Product.SQUID_INK, best_ask_squid, squid_qty))
 
         elif zscore <= -self.params[Product.JAM_SQUID_SPREAD]["zscore_threshold"]:
             # Spread too LOW: Buy Jams (underpriced), Sell Squid (overpriced)
@@ -679,9 +673,9 @@ class Trader:
                 squid_limit + squid_position  # Can sell up to (limit + position)
             )
 
-            if jam_qty > 0 and squid_qty > 0:
-                jam_orders.append(Order(Product.JAMS, best_ask_jam, jam_qty))
-                squid_orders.append(Order(Product.SQUID_INK, best_bid_squid, -squid_qty))
+            # if jam_qty > 0 and squid_qty > 0:
+            jam_orders.append(Order(Product.JAMS, best_ask_jam, jam_qty))
+            squid_orders.append(Order(Product.SQUID_INK, best_bid_squid, -squid_qty))
 
         # Store current z-score for reference
         spread_data["prev_zscore"] = zscore
